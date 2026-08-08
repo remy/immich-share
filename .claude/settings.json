@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc './scripts/setup-android-sdk.sh >/tmp/android-sdk-setup.log 2>&1 || echo \"Android SDK setup failed; see /tmp/android-sdk-setup.log\"'",
+            "timeout": 900
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
+import app.immichshare.BuildConfig
 import app.immichshare.MainUiState
 import app.immichshare.R
 import app.immichshare.data.ConnectionResult
@@ -70,6 +71,15 @@ fun MainScreen(
         ServerCard(state, onHostChange, onApiKeyChange, onSaveAndTest)
         PermissionCard()
         HelpCard()
+
+        // Sideloaded builds are otherwise indistinguishable on the phone, which
+        // makes "did the update actually install?" impossible to answer.
+        Text(
+            text = stringRes(R.string.settings_version, BuildConfig.VERSION_NAME),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

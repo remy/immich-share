@@ -14,8 +14,11 @@ android {
         applicationId = "app.immichshare"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        // Bump both on every build handed to someone. Sideloading gives no
+        // other way to tell which build is on a phone, and reinstalling the
+        // same versionCode looks identical whether or not it actually took.
+        versionCode = 2
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

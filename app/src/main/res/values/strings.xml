@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Immich Share</string>
+    <string name="upload_channel_name">Uploads</string>
+    <string name="upload_channel_description">Progress and results for photos sent to Immich</string>
+</resources>

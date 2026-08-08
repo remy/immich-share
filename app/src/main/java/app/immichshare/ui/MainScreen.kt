@@ -9,8 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -20,10 +25,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +59,8 @@ fun MainScreen(
     onHostChange: (String) -> Unit,
     onApiKeyChange: (String) -> Unit,
     onSaveAndTest: () -> Unit,
+    onAddDefaultTag: (String) -> Unit,
+    onRemoveDefaultTag: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -69,6 +79,7 @@ fun MainScreen(
         )
 
         ServerCard(state, onHostChange, onApiKeyChange, onSaveAndTest)
+        DefaultTagsCard(state.defaultTags, onAddDefaultTag, onRemoveDefaultTag)
         PermissionCard()
         HelpCard()
 
@@ -200,6 +211,85 @@ private fun StatusRow(icon: ImageVector, text: String, good: Boolean) {
             color = colour,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/**
+ * Tags applied to every share by default.
+ *
+ * Changes save as you make them rather than waiting on a button — there is
+ * nothing to validate against the server, since `PUT /api/tags` upserts by
+ * name, so a tag that does not exist yet is created on first upload.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DefaultTagsCard(
+    tags: Set<String>,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    var draft by remember { mutableStateOf("") }
+
+    fun commit() {
+        if (draft.isNotBlank()) {
+            onAdd(draft)
+            draft = ""
+        }
+    }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringRes(R.string.settings_default_tags),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = stringRes(R.string.settings_default_tags_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (tags.isNotEmpty()) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    tags.sorted().forEach { tag ->
+                        InputChip(
+                            selected = true,
+                            onClick = { onRemove(tag) },
+                            label = { Text(tag) },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = stringRes(R.string.settings_remove_tag, tag),
+                                    modifier = Modifier.size(InputChipDefaults.AvatarSize),
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    label = { Text(stringRes(R.string.settings_add_default_tag)) },
+                    placeholder = { Text(stringRes(R.string.sheet_tag_help)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { commit() }),
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { commit() }) {
+                    Text(stringRes(R.string.action_add))
+                }
+            }
+        }
     }
 }
 

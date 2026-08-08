@@ -26,6 +26,16 @@ fun normaliseHost(raw: String): String {
     return if (trimmed.isEmpty() || trimmed.contains("://")) trimmed else "https://$trimmed"
 }
 
+/**
+ * Immich treats a tag as a `/`-separated path, so surrounding whitespace and
+ * stray separators would create tags like `" Beach"` or an empty nesting level.
+ */
+fun normaliseTag(raw: String): String = raw
+    .split('/')
+    .map { it.trim() }
+    .filter { it.isNotEmpty() }
+    .joinToString("/")
+
 data class ServerConfig(
     val host: String,
     val apiKey: String,
@@ -54,6 +64,22 @@ class Settings(private val context: Context) {
     val lastTagNames: Flow<Set<String>> =
         context.dataStore.data.map { it[KEY_LAST_TAG_NAMES].orEmpty() }
     val hasOnboarded: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDED] == true }
+
+    /**
+     * Tags pre-selected on every share, set once in settings.
+     *
+     * Distinct from [lastTagNames], which drifts with whatever was used last.
+     * When these are set they win, so "everything from this phone gets tagged
+     * X" stays true rather than depending on the previous share.
+     */
+    val defaultTagNames: Flow<Set<String>> =
+        context.dataStore.data.map { it[KEY_DEFAULT_TAG_NAMES].orEmpty() }
+
+    suspend fun currentDefaultTags(): Set<String> = defaultTagNames.first()
+
+    suspend fun setDefaultTags(tags: Set<String>) {
+        context.dataStore.edit { it[KEY_DEFAULT_TAG_NAMES] = tags.map(::normaliseTag).toSet() }
+    }
 
     suspend fun currentServer(): ServerConfig = server.first()
 
@@ -87,6 +113,7 @@ class Settings(private val context: Context) {
         val KEY_LAST_ALBUM_ID = stringPreferencesKey("last_album_id")
         val KEY_LAST_ALBUM_NAME = stringPreferencesKey("last_album_name")
         val KEY_LAST_TAG_NAMES = stringSetPreferencesKey("last_tag_names")
+        val KEY_DEFAULT_TAG_NAMES = stringSetPreferencesKey("default_tag_names")
         val KEY_ONBOARDED = booleanPreferencesKey("has_onboarded")
     }
 }

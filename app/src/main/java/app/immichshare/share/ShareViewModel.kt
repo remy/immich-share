@@ -8,6 +8,7 @@ import app.immichshare.data.AlbumResponse
 import app.immichshare.data.ImmichRepository
 import app.immichshare.data.Settings
 import app.immichshare.data.TagResponse
+import app.immichshare.data.normaliseTag
 import app.immichshare.ui.AlbumSelection
 import app.immichshare.upload.UploadWorker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,7 +69,12 @@ class ShareViewModel(app: Application) : AndroidViewModel(app) {
 
             val lastAlbumId = settings.lastAlbumId.first()
             val lastAlbumName = settings.lastAlbumName.first()
-            val lastTags = settings.lastTagNames.first()
+
+            // An explicit default wins over last-used: "everything from this
+            // phone gets tagged X" should stay true regardless of what the
+            // previous share happened to use.
+            val defaultTags = settings.currentDefaultTags()
+            val startingTags = defaultTags.ifEmpty { settings.lastTagNames.first() }
 
             val restored = when {
                 lastAlbumId != null -> albums.firstOrNull { it.id == lastAlbumId }
@@ -84,7 +90,7 @@ class ShareViewModel(app: Application) : AndroidViewModel(app) {
                     tags = tags,
                     pickersLoading = false,
                     albumSelection = restored ?: it.albumSelection,
-                    selectedTags = if (it.selectedTags.isEmpty()) lastTags else it.selectedTags,
+                    selectedTags = if (it.selectedTags.isEmpty()) startingTags else it.selectedTags,
                 )
             }
         }
@@ -102,7 +108,10 @@ class ShareViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun addTag(value: String) = _state.update { it.copy(selectedTags = it.selectedTags + value) }
+    fun addTag(value: String) {
+        val tag = normaliseTag(value)
+        if (tag.isNotEmpty()) _state.update { it.copy(selectedTags = it.selectedTags + tag) }
+    }
 
     fun upload() {
         val current = _state.value

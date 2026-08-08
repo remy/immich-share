@@ -34,6 +34,12 @@
     <string name="settings_test">Save and test connection</string>
     <string name="settings_version">Version %1$s</string>
 
+    <!-- Default tags -->
+    <string name="settings_default_tags">Default tags</string>
+    <string name="settings_default_tags_help">Added to every share, already ticked on the confirm sheet. You can still change them for an individual share.</string>
+    <string name="settings_add_default_tag">Add a default tag</string>
+    <string name="settings_remove_tag">Remove %1$s</string>
+
     <string name="result_connected">Connected as %1$s</string>
     <string name="result_bad_key">The server answered, but rejected that API key. Check you copied all of it.</string>
     <string name="result_server_error">The server answered with an error (HTTP %1$d).</string>

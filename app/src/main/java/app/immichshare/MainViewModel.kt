@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import app.immichshare.data.ConnectionResult
 import app.immichshare.data.ImmichRepository
 import app.immichshare.data.Settings
+import app.immichshare.data.normaliseTag
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 data class MainUiState(
     val host: String = "",
     val apiKey: String = "",
+    val defaultTags: Set<String> = emptySet(),
     val loaded: Boolean = false,
     val testing: Boolean = false,
     val result: ConnectionResult? = null,
@@ -32,10 +34,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch {
             val config = settings.currentServer()
+            val tags = settings.currentDefaultTags()
             _state.update {
-                it.copy(host = config.host, apiKey = config.apiKey, loaded = true)
+                it.copy(
+                    host = config.host,
+                    apiKey = config.apiKey,
+                    defaultTags = tags,
+                    loaded = true,
+                )
             }
         }
+    }
+
+    /** Saved immediately rather than behind the server card's button — these are independent. */
+    fun addDefaultTag(raw: String) {
+        val tag = normaliseTag(raw)
+        if (tag.isEmpty() || tag in _state.value.defaultTags) return
+        updateDefaultTags(_state.value.defaultTags + tag)
+    }
+
+    fun removeDefaultTag(tag: String) = updateDefaultTags(_state.value.defaultTags - tag)
+
+    private fun updateDefaultTags(tags: Set<String>) {
+        _state.update { it.copy(defaultTags = tags) }
+        viewModelScope.launch { settings.setDefaultTags(tags) }
     }
 
     fun onHostChange(value: String) = _state.update {

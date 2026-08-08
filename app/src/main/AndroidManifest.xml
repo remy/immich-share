@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- WorkManager runs the upload in the foreground so a large batch is not
+         killed when the user leaves the app. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Upload progress + result notifications (runtime grant on API 33+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -59,6 +65,13 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+
+        <!-- Android 14+ requires the service type to be declared for the
+             foreground work started by UploadWorker. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
     </application>
 

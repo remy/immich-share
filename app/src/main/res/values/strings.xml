@@ -1,6 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Immich Share</string>
+
+    <!-- Notifications -->
     <string name="upload_channel_name">Uploads</string>
     <string name="upload_channel_description">Progress and results for photos sent to Immich</string>
+    <string name="notification_uploading">Sending to Immich</string>
+    <string name="notification_progress">%1$d of %2$d</string>
+    <string name="notification_failed">Upload problem</string>
+    <plurals name="result_uploaded">
+        <item quantity="one">%d photo added</item>
+        <item quantity="other">%d photos added</item>
+    </plurals>
+    <plurals name="result_duplicates">
+        <item quantity="one">%d was already in Immich</item>
+        <item quantity="other">%d were already in Immich</item>
+    </plurals>
+    <plurals name="result_failed">
+        <item quantity="one">%d failed</item>
+        <item quantity="other">%d failed</item>
+    </plurals>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Immich Share</string>
+    <string name="settings_intro">Send photos straight to your Immich server from any app\'s share button. Photos are uploaded exactly as they are, so dates, camera details and location are kept.</string>
+    <string name="settings_server">Your Immich server</string>
+    <string name="settings_host_label">Server address</string>
+    <string name="settings_host_hint">photos.example.com</string>
+    <string name="settings_host_help">If you leave off https:// it will be added for you.</string>
+    <string name="settings_key_label">API key</string>
+    <string name="settings_key_show">Show API key</string>
+    <string name="settings_key_hide">Hide API key</string>
+    <string name="settings_test">Save and test connection</string>
+
+    <string name="result_connected">Connected as %1$s</string>
+    <string name="result_bad_key">The server answered, but rejected that API key. Check you copied all of it.</string>
+    <string name="result_server_error">The server answered with an error (HTTP %1$d).</string>
+    <string name="result_unreachable">Couldn\'t reach the server: %1$s</string>
+
+    <!-- Permissions -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_media_why">Immich Share needs media access so your photos keep their location when uploaded. Without it, Android removes the GPS data before this app ever sees the photo.</string>
+    <string name="permissions_media_ok">Media access granted — location will be kept</string>
+    <string name="permissions_media_missing">Media access missing — photos will lose their location</string>
+    <string name="permissions_grant_media">Allow media access</string>
+    <string name="permissions_notify_ok">Notifications allowed</string>
+    <string name="permissions_notify_missing">Notifications off — you won\'t see upload progress</string>
+    <string name="permissions_grant_notify">Allow notifications</string>
+    <string name="permissions_open_settings">Open app settings</string>
+
+    <!-- Help -->
+    <string name="help_title">Getting set up</string>
+    <string name="help_api_key">To make an API key: open Immich in a browser, go to Account Settings, then API Keys, and create a new one. Copy it into the box above.</string>
+    <string name="help_sharing">Then share photos from any app — tap Share, pick Immich Share, and choose an album if you want one.</string>
+
+    <!-- Confirm sheet -->
+    <string name="sheet_preparing">Preparing photos…</string>
+    <plurals name="sheet_title">
+        <item quantity="one">Send %d photo to Immich</item>
+        <item quantity="other">Send %d photos to Immich</item>
+    </plurals>
+    <string name="sheet_album">Album</string>
+    <string name="sheet_album_hint">No album</string>
+    <string name="sheet_album_none">No album</string>
+    <string name="sheet_album_create">Will create album \"%1$s\"</string>
+    <string name="sheet_tags">Tags</string>
+    <string name="sheet_tag_new">Add a tag</string>
+    <string name="sheet_tag_help">Use / for nested tags, like Holiday/2026</string>
+    <string name="sheet_setup_title">Set up Immich Share first</string>
+    <string name="sheet_setup_body">Add your server address and API key, then try sharing again.</string>
+    <string name="sheet_setup_action">Open settings</string>
+
+    <!-- Metadata chips -->
+    <string name="meta_date">Date</string>
+    <string name="meta_gps">Location</string>
+    <string name="meta_camera">Camera</string>
+    <string name="meta_gps_blocked">No location found. Android hides it unless media access is allowed.</string>
+
+    <!-- Actions and errors -->
+    <string name="action_upload">Upload</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_add">Add</string>
+    <string name="toast_queued">Uploading in the background</string>
+    <string name="error_no_images">No images were shared</string>
+    <string name="error_not_configured">Set your server address and API key first</string>
+    <string name="error_album">Photos uploaded, but the album failed: %1$s</string>
+    <string name="error_tags">Photos uploaded, but tagging failed: %1$s</string>
+    <string name="error_partial">%1$s</string>
 </resources>

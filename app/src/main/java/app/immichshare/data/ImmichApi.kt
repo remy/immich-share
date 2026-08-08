@@ -22,14 +22,19 @@ interface ImmichApi {
     @GET("api/users/me")
     suspend fun me(): UserResponse
 
+    /**
+     * Every field is passed as a pre-built [MultipartBody.Part], including the
+     * text ones.
+     *
+     * `@Part("name") String` would route the value through the converter, and
+     * the kotlinx-serialization converter JSON-encodes a String — so
+     * `fileCreatedAt` would arrive as `"2026-07-14T17:22:03Z"`, quotes and all,
+     * and the date would not parse. Building the parts by hand sidesteps the
+     * converter entirely.
+     */
     @Multipart
     @POST("api/assets")
-    suspend fun uploadAsset(
-        @Part assetData: MultipartBody.Part,
-        @Part("fileCreatedAt") fileCreatedAt: String,
-        @Part("fileModifiedAt") fileModifiedAt: String,
-        @Part("filename") filename: String,
-    ): Response<AssetUploadResponse>
+    suspend fun uploadAsset(@Part parts: List<MultipartBody.Part>): Response<AssetUploadResponse>
 
     @GET("api/albums")
     suspend fun albums(): List<AlbumResponse>

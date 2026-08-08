@@ -7,10 +7,44 @@ with all original metadata intact.
 This repo holds the Kotlin source. Following the `priority-calls` precedent, only the
 built APK and a landing page are published to `remy/tools`.
 
-**Status: build toolchain and skeleton only.** The share flow, settings screen and upload
-worker described in the spec are not implemented yet — the source tree currently contains
-the scaffolding those pieces slot into, plus the two metadata helpers that must not
-regress (`share/Staging.kt`).
+**Status: implemented, not yet verified against a live server.** The settings screen,
+share sheet and upload worker are all in place and the build is green, but nothing here
+has been tested against a real Immich instance or on a physical device.
+
+## Immich API key permissions
+
+Immich API keys are scoped. Create one under **Account Settings → API Keys**; these are
+the permissions this app needs, one row per endpoint it calls.
+
+| What the app does | Endpoint | Permission |
+| --- | --- | --- |
+| Test connection | `GET /api/users/me` | `user.read` |
+| Upload a photo | `POST /api/assets` | `asset.upload` |
+| List albums for the picker | `GET /api/albums` | `album.read` |
+| Create a typed-in album | `POST /api/albums` | `album.create` |
+| Add photos to an album | `PUT /api/albums/{id}/assets` | `albumAsset.create` |
+| List tags for the picker | `GET /api/tags` | `tag.read` |
+| Create or upsert tags by name | `PUT /api/tags` | `tag.create` |
+| Attach tags to photos | `PUT /api/tags/assets` | `tag.asset` |
+
+Note that `albumAsset.create` is a separate scope from `album.create` — adding to an
+existing album and creating a new one are granted independently, and it is easy to tick
+one and not the other.
+
+**Minimum useful key:** `asset.upload` and `user.read`. Photos upload fine; the album and
+tag pickers come back empty and any selection fails after upload. Since album and tag
+failures are reported as "uploaded, but…", the photos still land safely — you just get an
+error notification each time. `user.read` is only used by **Save and test connection**,
+but without it that button reports the key as rejected even though uploads would work,
+which is confusing enough to be worth including.
+
+For albums but no tags, add `album.read`, `album.create` and `albumAsset.create`.
+
+These were read off the `Permission` enum in `server/src/enum.ts` and the
+`@Authenticated({ permission: … })` decorator on each route in `immich-app/immich` on
+`main`, not from documentation. Granular API key permissions are a relatively recent
+Immich feature; on an older server there is no permission picker and keys carry full
+account access, making this moot.
 
 ## Requirements
 
@@ -76,16 +110,17 @@ Three things differ from the original spec, all found by building it:
 app/src/main/java/app/immichshare/
 ├── ImmichShareApp.kt       # Application: notification channel
 ├── MainActivity.kt         # launcher / settings / onboarding
-├── data/                   # DataStore settings, Retrofit API, DTOs, client
-├── share/                  # ShareActivity, byte staging, EXIF helpers
-├── ui/                     # Material 3 theme, thumbnails
-└── upload/                 # UploadWorker
+├── MainViewModel.kt        # settings state, connection test
+├── data/                   # DataStore settings, Retrofit API, DTOs, repository
+├── share/                  # ShareActivity, byte staging, EXIF, batch manifest
+├── ui/                     # Material 3 theme, settings screen, confirm sheet
+└── upload/                 # UploadWorker, notifications
 ```
 
 ## The parts that are easy to get wrong
 
-The spec documents four traps that silently destroy metadata or break uploads. The two
-already encoded here:
+The spec documents four traps that silently destroy metadata or break uploads. All four
+are handled; these are the two worth knowing before changing anything:
 
 - **URI grants die with the Activity.** An `ACTION_SEND` `content://` grant is scoped to
   the receiving activity and cannot be made persistable, so bytes must be staged to
@@ -97,6 +132,6 @@ already encoded here:
   which only exists from API 29 and only accepts MediaStore URIs. A redaction failure must
   degrade visibly, never block the upload.
 
-Two more apply to code not yet written: EXIF dates carry no timezone (use
-`ExifInterface`, never hand-roll the parse), and the upload body must stream from the
-staged file rather than buffer into a `ByteArray`.
+The other two: EXIF dates carry no timezone, so `ExifInterface` resolves them rather than
+any hand-rolled parse (`share/Staging.kt`), and the upload body streams from the staged
+file rather than buffering into a `ByteArray` (`upload/UploadWorker.kt`).

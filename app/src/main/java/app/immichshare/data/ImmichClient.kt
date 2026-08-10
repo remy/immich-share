@@ -21,14 +21,21 @@ object ImmichClient {
      * SPEC §8: uploads can be hundreds of megabytes over mobile, so the write
      * timeout is generous and `callTimeout` is deliberately left unset.
      */
-    fun create(host: String, apiKey: String): ImmichApi {
+    fun create(
+        host: String,
+        apiKey: String,
+        accessHeaders: AccessHeaders = AccessHeaders(),
+    ): ImmichApi {
+        val extra = accessHeaders.asMap()
+
         val auth = Interceptor { chain ->
-            chain.proceed(
-                chain.request().newBuilder()
-                    .header("x-api-key", apiKey)
-                    .header("Accept", "application/json")
-                    .build()
-            )
+            val builder = chain.request().newBuilder()
+                .header("x-api-key", apiKey)
+                .header("Accept", "application/json")
+            // Proxy credentials go on every request, including the multipart
+            // upload — the proxy rejects at the edge, before Immich is reached.
+            extra.forEach { (name, value) -> builder.header(name, value) }
+            chain.proceed(builder.build())
         }
 
         val logging = HttpLoggingInterceptor().apply {
@@ -37,8 +44,9 @@ object ImmichClient {
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
-            // Never log the key, whatever the level.
+            // Never log credentials, whatever the level.
             redactHeader("x-api-key")
+            accessHeaders.sensitiveHeaderNames().forEach(::redactHeader)
         }
 
         val client = OkHttpClient.Builder()

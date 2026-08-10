@@ -3,6 +3,7 @@ package app.immichshare
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.immichshare.data.AccessHeaders
 import app.immichshare.data.ConnectionResult
 import app.immichshare.data.ImmichRepository
 import app.immichshare.data.Settings
@@ -17,6 +18,7 @@ data class MainUiState(
     val host: String = "",
     val apiKey: String = "",
     val defaultTags: Set<String> = emptySet(),
+    val accessHeaders: AccessHeaders = AccessHeaders(),
     val loaded: Boolean = false,
     val testing: Boolean = false,
     val result: ConnectionResult? = null,
@@ -35,11 +37,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val config = settings.currentServer()
             val tags = settings.currentDefaultTags()
+            val headers = settings.currentAccessHeaders()
             _state.update {
                 it.copy(
                     host = config.host,
                     apiKey = config.apiKey,
                     defaultTags = tags,
+                    accessHeaders = headers,
                     loaded = true,
                 )
             }
@@ -68,6 +72,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         it.copy(apiKey = value, result = null, saved = false)
     }
 
+    fun onAccessHeadersChange(headers: AccessHeaders) = _state.update {
+        it.copy(accessHeaders = headers, result = null, saved = false)
+    }
+
     /**
      * Saves first, then tests, so a working config is persisted even if the
      * server happens to be unreachable at that moment.
@@ -79,7 +87,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(testing = true, result = null) }
             settings.setServer(current.host, current.apiKey)
-            val result = repo.testConnection(current.host, current.apiKey)
+            settings.setAccessHeaders(current.accessHeaders)
+            val result = repo.testConnection(
+                host = current.host,
+                apiKey = current.apiKey,
+                accessHeaders = current.accessHeaders,
+            )
             _state.update {
                 it.copy(
                     testing = false,

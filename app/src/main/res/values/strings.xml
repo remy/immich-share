@@ -44,6 +44,18 @@
     <string name="result_bad_key">The server answered, but rejected that API key. Check you copied all of it.</string>
     <string name="result_server_error">The server answered with an error (HTTP %1$d).</string>
     <string name="result_unreachable">Couldn\'t reach the server: %1$s</string>
+    <string name="result_rejected">Access denied (HTTP %1$d). With proxy headers switched on this could be either the API key or the service token — check both.</string>
+
+    <!-- Proxy headers -->
+    <string name="settings_proxy">Behind a proxy?</string>
+    <string name="settings_proxy_on">Extra headers are being sent</string>
+    <string name="settings_proxy_off">Off — leave this alone unless your server is behind Cloudflare Access or similar</string>
+    <string name="settings_proxy_help">Sent with every request, so the proxy lets them through before they reach Immich. The names are already set for Cloudflare Access; change them only if your proxy expects different ones.</string>
+    <string name="settings_proxy_id_name">Client ID header name</string>
+    <string name="settings_proxy_id_value">Client ID</string>
+    <string name="settings_proxy_secret_name">Client secret header name</string>
+    <string name="settings_proxy_secret_value">Client secret</string>
+    <string name="settings_proxy_save_note">Saved when you tap Save and test connection above.</string>
 
     <!-- Permissions -->
     <string name="permissions_title">Permissions</string>

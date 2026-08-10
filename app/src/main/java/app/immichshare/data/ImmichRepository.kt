@@ -9,6 +9,8 @@ sealed interface ConnectionResult {
     data class Success(val email: String) : ConnectionResult
     /** The server answered, but rejected the key. */
     data object BadKey : ConnectionResult
+    /** Rejected while proxy headers are configured — could be either credential. */
+    data class Rejected(val code: Int) : ConnectionResult
     /** The server answered with something unexpected. */
     data class ServerError(val code: Int, val detail: String) : ConnectionResult
     /** Never reached the server at all. */
@@ -24,7 +26,7 @@ class ImmichRepository(private val settings: Settings) {
     private suspend fun api(): ImmichApi {
         val config = settings.currentServer()
         require(config.isComplete) { "Immich server is not configured" }
-        return ImmichClient.create(config.host, config.apiKey)
+        return ImmichClient.create(config.host, config.apiKey, settings.currentAccessHeaders())
     }
 
     /**
@@ -34,17 +36,28 @@ class ImmichRepository(private val settings: Settings) {
      * Distinguishing "key rejected" from "couldn't reach the server" matters —
      * they need completely different fixes, and a self-hoster hits both.
      */
-    suspend fun testConnection(host: String, apiKey: String): ConnectionResult {
+    suspend fun testConnection(
+        host: String,
+        apiKey: String,
+        accessHeaders: AccessHeaders = AccessHeaders(),
+    ): ConnectionResult {
         val normalised = normaliseHost(host)
         if (normalised.isBlank()) return ConnectionResult.Unreachable("No server address entered")
         if (apiKey.isBlank()) return ConnectionResult.BadKey
 
         return try {
-            val user = ImmichClient.create(normalised, apiKey.trim()).me()
+            val user = ImmichClient.create(normalised, apiKey.trim(), accessHeaders).me()
             ConnectionResult.Success(user.email)
         } catch (e: HttpException) {
             when (e.code()) {
-                401, 403 -> ConnectionResult.BadKey
+                // A proxy in front of Immich also answers 401/403, and blaming
+                // the API key then sends you looking in the wrong place.
+                401, 403 -> if (accessHeaders.isConfigured) {
+                    ConnectionResult.Rejected(e.code())
+                } else {
+                    ConnectionResult.BadKey
+                }
+
                 else -> ConnectionResult.ServerError(e.code(), e.message().orEmpty())
             }
         } catch (e: IOException) {

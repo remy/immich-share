@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
                         onHostChange = model::onHostChange,
                         onApiKeyChange = model::onApiKeyChange,
                         onSaveAndTest = model::saveAndTest,
+                        onAccessHeadersChange = model::onAccessHeadersChange,
                         onAddDefaultTag = model::addDefaultTag,
                         onRemoveDefaultTag = model::removeDefaultTag,
                         modifier = Modifier.padding(insets),

@@ -17,8 +17,8 @@ android {
         // Bump both on every build handed to someone. Sideloading gives no
         // other way to tell which build is on a phone, and reinstalling the
         // same versionCode looks identical whether or not it actually took.
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

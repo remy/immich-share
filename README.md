@@ -46,6 +46,27 @@ These were read off the `Permission` enum in `server/src/enum.ts` and the
 Immich feature; on an older server there is no permission picker and keys carry full
 account access, making this moot.
 
+## Servers behind a proxy
+
+If Immich sits behind Cloudflare Access — or any proxy that authenticates on a header —
+turn on **Behind a proxy?** in settings and fill in a service token. The header names are
+pre-filled with Cloudflare's:
+
+| Field | Default |
+| --- | --- |
+| Client ID header name | `CF-Access-Client-Id` |
+| Client secret header name | `CF-Access-Client-Secret` |
+
+Both names are editable, so any header-based proxy works. The headers go on **every**
+request, including the multipart upload, because the proxy rejects at the edge before
+Immich is reached. A field left blank omits that header rather than sending it empty.
+
+Both values are redacted from the OkHttp log, alongside `x-api-key`.
+
+Note that a proxy answers `401`/`403` just as Immich does for a bad API key, so when
+proxy headers are switched on the connection test says the credentials were rejected
+without guessing which of the two is wrong.
+
 ## Requirements
 
 - JDK 21

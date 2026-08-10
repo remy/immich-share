@@ -30,6 +30,7 @@ import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,6 +52,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import app.immichshare.BuildConfig
 import app.immichshare.MainUiState
 import app.immichshare.R
+import app.immichshare.data.AccessHeaders
 import app.immichshare.data.ConnectionResult
 
 @Composable
@@ -59,6 +61,7 @@ fun MainScreen(
     onHostChange: (String) -> Unit,
     onApiKeyChange: (String) -> Unit,
     onSaveAndTest: () -> Unit,
+    onAccessHeadersChange: (AccessHeaders) -> Unit,
     onAddDefaultTag: (String) -> Unit,
     onRemoveDefaultTag: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -79,6 +82,7 @@ fun MainScreen(
         )
 
         ServerCard(state, onHostChange, onApiKeyChange, onSaveAndTest)
+        AccessHeadersCard(state.accessHeaders, onAccessHeadersChange)
         DefaultTagsCard(state.defaultTags, onAddDefaultTag, onRemoveDefaultTag)
         PermissionCard()
         HelpCard()
@@ -182,6 +186,9 @@ private fun ConnectionResultRow(result: ConnectionResult) {
         ConnectionResult.BadKey ->
             Triple(Icons.Filled.Error, stringRes(R.string.result_bad_key), false)
 
+        is ConnectionResult.Rejected ->
+            Triple(Icons.Filled.Error, stringRes(R.string.result_rejected, result.code), false)
+
         is ConnectionResult.ServerError ->
             Triple(Icons.Filled.Error, stringRes(R.string.result_server_error, result.code), false)
 
@@ -211,6 +218,130 @@ private fun StatusRow(icon: ImageVector, text: String, good: Boolean) {
             color = colour,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/**
+ * Extra headers for a server behind an authenticating proxy.
+ *
+ * Collapsed by default: most self-hosters do not need it, and an unexplained
+ * pair of credential boxes above the API key invites people to fill them in.
+ * The header names are pre-filled for Cloudflare Access but stay editable, so
+ * any header-based proxy works.
+ */
+@Composable
+private fun AccessHeadersCard(
+    headers: AccessHeaders,
+    onChange: (AccessHeaders) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(headers.isConfigured) }
+    var revealSecret by remember { mutableStateOf(false) }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = stringRes(R.string.settings_proxy),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringRes(
+                            if (headers.isConfigured) R.string.settings_proxy_on
+                            else R.string.settings_proxy_off
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = expanded,
+                    onCheckedChange = { on ->
+                        expanded = on
+                        // Turning it off clears the values but keeps the header
+                        // names, so switching back on does not mean retyping them.
+                        if (!on) onChange(headers.copy(idValue = "", secretValue = ""))
+                    },
+                )
+            }
+
+            if (expanded) {
+                Text(
+                    text = stringRes(R.string.settings_proxy_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                OutlinedTextField(
+                    value = headers.idName,
+                    onValueChange = { onChange(headers.copy(idName = it)) },
+                    label = { Text(stringRes(R.string.settings_proxy_id_name)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = headers.idValue,
+                    onValueChange = { onChange(headers.copy(idValue = it)) },
+                    label = { Text(stringRes(R.string.settings_proxy_id_value)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                OutlinedTextField(
+                    value = headers.secretName,
+                    onValueChange = { onChange(headers.copy(secretName = it)) },
+                    label = { Text(stringRes(R.string.settings_proxy_secret_name)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = headers.secretValue,
+                    onValueChange = { onChange(headers.copy(secretValue = it)) },
+                    label = { Text(stringRes(R.string.settings_proxy_secret_value)) },
+                    singleLine = true,
+                    visualTransformation = if (revealSecret) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { revealSecret = !revealSecret }) {
+                            Icon(
+                                imageVector = if (revealSecret) {
+                                    Icons.Filled.VisibilityOff
+                                } else {
+                                    Icons.Filled.Visibility
+                                },
+                                contentDescription = stringRes(
+                                    if (revealSecret) R.string.settings_key_hide
+                                    else R.string.settings_key_show
+                                ),
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Text(
+                    text = stringRes(R.string.settings_proxy_save_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

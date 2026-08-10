@@ -36,6 +36,39 @@ fun normaliseTag(raw: String): String = raw
     .filter { it.isNotEmpty() }
     .joinToString("/")
 
+/**
+ * Extra headers sent on every request, for servers sitting behind an
+ * authenticating proxy.
+ *
+ * Defaults are Cloudflare Access service-token headers, which is the case this
+ * exists for, but the names are editable so any header-based proxy works.
+ * Sent only when a value is present — an empty value means the header is
+ * omitted entirely rather than sent blank, which some proxies reject.
+ */
+data class AccessHeaders(
+    val idName: String = DEFAULT_ACCESS_ID_HEADER,
+    val idValue: String = "",
+    val secretName: String = DEFAULT_ACCESS_SECRET_HEADER,
+    val secretValue: String = "",
+) {
+    val isConfigured: Boolean get() = asMap().isNotEmpty()
+
+    fun asMap(): Map<String, String> = buildMap {
+        val id = idName.trim() to idValue.trim()
+        if (id.first.isNotEmpty() && id.second.isNotEmpty()) put(id.first, id.second)
+
+        val secret = secretName.trim() to secretValue.trim()
+        if (secret.first.isNotEmpty() && secret.second.isNotEmpty()) put(secret.first, secret.second)
+    }
+
+    /** Header names to redact from logs; the secret must never reach logcat. */
+    fun sensitiveHeaderNames(): List<String> =
+        listOf(idName.trim(), secretName.trim()).filter { it.isNotEmpty() }
+}
+
+const val DEFAULT_ACCESS_ID_HEADER = "CF-Access-Client-Id"
+const val DEFAULT_ACCESS_SECRET_HEADER = "CF-Access-Client-Secret"
+
 data class ServerConfig(
     val host: String,
     val apiKey: String,
@@ -81,7 +114,27 @@ class Settings(private val context: Context) {
         context.dataStore.edit { it[KEY_DEFAULT_TAG_NAMES] = tags.map(::normaliseTag).toSet() }
     }
 
+    val accessHeaders: Flow<AccessHeaders> = context.dataStore.data.map {
+        AccessHeaders(
+            idName = it[KEY_ACCESS_ID_NAME] ?: DEFAULT_ACCESS_ID_HEADER,
+            idValue = it[KEY_ACCESS_ID_VALUE].orEmpty(),
+            secretName = it[KEY_ACCESS_SECRET_NAME] ?: DEFAULT_ACCESS_SECRET_HEADER,
+            secretValue = it[KEY_ACCESS_SECRET_VALUE].orEmpty(),
+        )
+    }
+
     suspend fun currentServer(): ServerConfig = server.first()
+
+    suspend fun currentAccessHeaders(): AccessHeaders = accessHeaders.first()
+
+    suspend fun setAccessHeaders(headers: AccessHeaders) {
+        context.dataStore.edit {
+            it[KEY_ACCESS_ID_NAME] = headers.idName.trim()
+            it[KEY_ACCESS_ID_VALUE] = headers.idValue.trim()
+            it[KEY_ACCESS_SECRET_NAME] = headers.secretName.trim()
+            it[KEY_ACCESS_SECRET_VALUE] = headers.secretValue.trim()
+        }
+    }
 
     suspend fun setServer(host: String, apiKey: String) {
         context.dataStore.edit {
@@ -114,6 +167,10 @@ class Settings(private val context: Context) {
         val KEY_LAST_ALBUM_NAME = stringPreferencesKey("last_album_name")
         val KEY_LAST_TAG_NAMES = stringSetPreferencesKey("last_tag_names")
         val KEY_DEFAULT_TAG_NAMES = stringSetPreferencesKey("default_tag_names")
+        val KEY_ACCESS_ID_NAME = stringPreferencesKey("access_id_name")
+        val KEY_ACCESS_ID_VALUE = stringPreferencesKey("access_id_value")
+        val KEY_ACCESS_SECRET_NAME = stringPreferencesKey("access_secret_name")
+        val KEY_ACCESS_SECRET_VALUE = stringPreferencesKey("access_secret_value")
         val KEY_ONBOARDED = booleanPreferencesKey("has_onboarded")
     }
 }
